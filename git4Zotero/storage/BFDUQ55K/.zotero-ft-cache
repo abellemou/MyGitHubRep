@@ -1,0 +1,700 @@
+electronics
+Article
+Eﬃcient Implementation on Low-Cost SoC-FPGAs of TLSv1.2 Protocol with ECC_AES Support for Secure IoT Coordinators
+Ahmed Mohamed Bellemou 1,2 , Antonio García 3 , Encarnación Castillo 3 , Nadjia Benblidia 2, Mohamed Anane 4, José Antonio Álvarez-Bermejo 5 and Luis Parrilla 3,*
+1 Department of System and Multimedia Architecture, Centre de Développement des Technologies Avancées, Baba Hassen, Algiers 16081, Algeria; abellemou@cdta.dz
+2 LRDSI Laboratory, Department of Electronics, Blida 1 University, Blida 09000, Algeria; benblidia@yahoo.com 3 Departamento Electrónica y Tecnología de Computadores, Universidad de Granada, 18071 Granada, Spain;
+grios@ugr.es (A.G.); encas@ugr.es (E.C.) 4 Ecole Supérieure d’Informatique, El Harrach, Algiers 16270, Algeria; m_anane@esi.dz 5 Departamento Informática, Universidad de Almería, 04120 Almería, Spain; jaberme@ual.es * Correspondence: lparrilla@ditec.ugr.es; Tel.: +34-958-244-082
+Received: 7 October 2019; Accepted: 26 October 2019; Published: 30 October 2019
+Abstract: Security management for IoT applications is a critical research ﬁeld, especially when taking into account the performance variation over the very diﬀerent IoT devices. In this paper, we present high-performance client/server coordinators on low-cost SoC-FPGA devices for secure IoT data collection. Security is ensured by using the Transport Layer Security (TLS) protocol based on the TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 cipher suite. The hardware architecture of the proposed coordinators is based on SW/HW co-design, implementing within the hardware accelerator core Elliptic Curve Scalar Multiplication (ECSM), which is the core operation of Elliptic Curve Cryptosystems (ECC). Meanwhile, the control of the overall TLS scheme is performed in software by an ARM Cortex-A9 microprocessor. In fact, the implementation of the ECC accelerator core around an ARM microprocessor allows not only the improvement of ECSM execution but also the performance enhancement of the overall cryptosystem. The integration of the ARM processor enables to exploit the possibility of embedded Linux features for high system ﬂexibility. As a result, the proposed ECC accelerator requires limited area, with only 3395 LUTs on the Zynq device used to perform high-speed, 233-bit ECSMs in 413 µs, with a 50 MHz clock. Moreover, the generation of a 384-bit TLS handshake secret key between client and server coordinators requires 67.5 ms on a low cost Zynq 7Z007S device.
+Keywords: TLS; ECC; AES; FPGA; Embedded Linux
+
+1. Introduction
+The growth in the penetration of the Internet of Things (IoT) [1] in our daily life, be it in ﬁelds such as smart homes, smart enterprises, smart hospitals or smart cities, which require a large number of interconnected IoT devices, open the subject of IoT data security concerns. In fact, large amounts of information are transferred through heterogeneous networks, ranging from local wireless sensor networks (WSN) to Wide Area Networks (WAN). Fortunately, Transport Layer Security (TLS) [2] provides an end-to-end network secure information transfer over insecure channels by combining heterogeneous cryptographic protocols like symmetric schemes (e.g., 3DES, AES) [3,4], secure hash functions (e.g., SHA-1, SHA-2, SHA-3) [5,6] and public-key algorithms (e.g., RSA, ECDH, ECDSA) [7]. These last cryptosystems are computationally intensive, due to the complex operations required by
+
+Electronics 2019, 8, 1238; doi:10.3390/electronics8111238
+
+www.mdpi.com/journal/electronics
+
+ElectroEnlieccstr2o0n1ic9s,280,1192, 388, x FOR PEER REVIEW
+
+2 of 182 of 18
+
+AES) [3,4], secure hash functions (e.g., SHA-1, SHA-2, SHA-3) [5,6] and public-key algorithms (e.g., publiRcSkAe,yEpCrDoHto,cEoClsD, SaAnd) [m7].ayThneoste blaestofcrgyepntoesryasltiezmeds uarsee cdoumeptuotahtiaorndawllyarientleinmsiivtae,tidounes. toHtohwe ever,
+in cocnotmropllexd oepnevrairtoionnms erenqtus,irseudcbhyapsulbolcicalkeWySpNrost,osciomls,palinﬁdedmapyrontootcobelsoifmgpenleemraelinzetedduosevedruceotmo pact
+crypthoaprrdowceasrseorlismciatantiboensa. sHolouwtieovner[,8]i.nIncothnetrocallseedoefnIoviTrocnomorednitns,atsourcnhoadsesl,owcahl icWhSrNeqsu, isriemtpralinfisefderring data tporotthoecoIlnsteimrnpelte,mSeenctuerde oSvoecrkectosmLpaaycet rc(rSySpLto)p[r9o]ceosrsoTrLsScaanrebteheapsroelfuetriorend[8s]o.luIntiothne. case of IoT
+IcnootrhdeinIaotTorpnaordaeds,igwmhicthherreequairree tdriaﬀnesfreernritnaggdeanttastoimthpeliIendte,rsnuetc,hSeacsurseenSosockrest,scLaamyeerra(SsS, La)ct[u9]aotor rs or microTcLhSiparse, wthehipcrhefceorrleledcstoaluntdiotnr.ansfer information through the Internet. As it is diﬃcult to regulate the pmerifcororInmchtaihpnesc,IeowTohfipcaahlrlacodIolilgTemcdt atehnvedircetersaa,rnessefdeciruffirenirfteoynrmtmaaagtnieonantgstehimmropeunlgiethdft,ohsreuIcIonhTtearasnpsepetn.liAscosartsiit,oicsnasmdibeffreiaccsuo,lmtacteotusraemtgouurslcahotermore diﬃctuhlet tphearnfofromraancseinogflealdl IeovTicdee[v8i]c.eDs, useectuoritthyemloawnagpeemrfeonrtmfaonr cIoeThaaprdpwlicaarteiornessobuecrocmeseosfmaulcahrgme onruember of IoTdiaffgiceunlttst[h9a]n, tfhoer taarsginegtleeddcervyipceto[g8]r.aDphuiec taolgthoeritlohwmspearrfeornmoatnscueithaabrldewtoarbeeriemsopulrecmeseonfteadlaorngeevery IoT dneuvmicbee[r1o0f].IoHTeangceen,tws [e9]p,rtohpeotasregteoteddecsriygpntohgigrahp-hpiecrafolgromriathnmcescalrieennto/st esruvitearbcleootordbieniamtoprlesmonenltoewd -cost
+SoC-FonPGevAerdyeIvoTicedsevfoicres[e1c0u].rHeeInocTe,dwaetapcroplloescetitoond, eassigsnhohiwghn-pinerFfoigrmuraenc1e. cTlihenetI/oseTrvCerlieconotrcdoinoartdoirnsators
+(IoTCo1n, IlowTC-c2o)stcSoollCec-FtPdGaAta dfreovmiceIsofTorasgeecnutrse(IAoT1,dAat2a, Aco3ll,eAct4io,nA, 5a,sAsh6o)wandinseFnigdurite t1o. tThhee sIeorTvCerlitehnrtough the Inctoeorrndeitn.aTtohres (IIooTTCS1e,rvIoeTrCc2o)ocrodlilencattdoart(aIofrToSm) aIocTtsaagsenatns i(nAt1e,rAfa2c,eAb3e,tAw4e,eAn5t,hAe6I)oaTnCdsseanndditthtoe tsheerver’s memsoerryv,ewr thhreoruegthhethsee Idnatetranewt.iTllhbeeIosTtoSreerdve. rTchooerdseincautroer (dIoaTtaS)traactnssafseranbienttwerefaecne IboeTtwCesenanthdetIhoeTCIosTS is ensuraenddbthyethseervTeLrS’svm1.e2mporroyt,owcohle,rientohredseerdtaotapwroiltlebcte tshtoeriendf.oTrhmeasteiocunrefrdoamtautnraanustfherorbieztewdeeunseIorsT.CIsn fact, TLSvau1nn.2dauattlhhloeowriIzoseTdtSougisseernesen. rsIauntrefeadact,sbhTyLartSheved1.2TseLacSllrvoe1wt.2ks etpoyrogbteeontceworlae,teeinnatoshhredaerIeordTtSoseacprnredottkeeceatychtbheIetowTineCefon(rKmtheaeytiI1oo,nTKSferaoynm2d) that couldeabcehuIosTedC t(oKeeyn1c,rKyepyt2/d) tehcartycpotudldatbaebuasseeddtooennpcrryivpat/tdee-ckreyyptadlgaotaribthasmeds.on private-key algorithms.
+
+Memory
+
+IoTS
+
+Key 2 Key 1
+
+Key 2
+
+A1
+
+IoTC 1
+
+Internet
+
+Key 1
+
+IoTC 2
+
+A6
+
+A2 A3
+
+A5 A4
+
+FiguFrigeu1r.eG1.loGbloabl aSlcShcehmemeeooffththeettaarrggeetteeddIIooTT(I(nIntetrenrenteotfoTfhTinhgins)gasp)palpicpaltiicoant.ion.
+In thIins pthaips epra, pweer,fwoceufsocouns soencusercinugrindgatdaattraatnrasnfesrfreerrdedfrofrmom/t/otoIoIToTcocooorrddininaattoorrss bbyy mmeeaannss oofftthhee TLS protoTcLolS, spirnocteocSoSlL, siisnccoenSsSiLdeisrecdoninsisdeecruerdei[n1s1e]c.uErﬃe [c1i1e]n. tEifmficpielenmt iemnptaletmioennstoatfitohnessoefptrhoetsoecpolrsotaosceomlsbaesdded crypteomsybsetdedmeds ccarynpbtoespyrsotebmlesmcaanticb,esipnrcoebltehmeattaicr,gesitndceevthiceestaargreetudseuvailcleys vaerreyulsiumailtlyedveinrytelirmmisteodfipnower, resouthreacrvemsesabonefdenptoipmwreoinrp,gor.seeSsdoeuvirencreatshl eaTnLldiSte/trSiamStLuinregem. [S1be2ev–de1dr7a]el.dTOcLprSey/nSpSStSoLLseym[s1t8be,em1d9d]imeidsptclheryempmetonostsyatsttideomenpsliohmyapevdleemlbibeenreatnraytpiorfnoospr osed in theTLlSit/eSrSaLtuarpep[li1c2a–ti1o7n]s. tOhrpouenghSSsLof[t1w8a,r1e9]imisptlheme emntoastitondsepolfoybeasdiclicbrryaprtyogfroarphTiLc Sf/uSnScLtioanpsp. lFicoartions throuognhly-ssooffttwwaarree iTmLpSl/eSmSLenitmatpiolenmseontfabtioansisc c[r1y7,p2t0o],grsaeprhveicrsfucnacntiobnes. oFvoerrlooandleyd-sowftiwtharheeTavLyS/SSL implecrmypentotgartaiopnhisc [1o7p,e2r0a]t,iosnesr,vwerhsicchanrebsueltosveinrloloandgedrewspiothnshe etaimvyesc. rTyoptoalglervaipahteicthoips ebraottiloennse,ckw, hich resultdseidniclaotnedg rheasrpdownasreetcimoperso.ceTsosoarlsle[v1i2a–t1e7t,h21is] bhoavttelebneeecnk,pdroepdoicsaedte,dashaNredtwoarke cSoepcurorictyesPsororcse[s1s2o–rs17,21] have(bNeSePn),parsoapososleudti,oans tNo efrteweotrhkesSeesceuvreirtsy fProromcecsrsyoprtosg(rNapShPi)c, oapsearastoiolnustifoonr tfolexfribelee tmheasneagseemvernst.from cryptNogevrearpthheiclesosp, earltahtoioungsh feofrfeﬂcteivxeibelfefomrtsanhaagveembeenent. mNadeve e[r1t0h]efloersst,haeltahcoceulegrhatieoﬀnecotfiveenceryﬀpotritosnhave beenmmetahdoeds[,10N]SPfosrctahneparcocveolkeeraatnionovoerfheenadcryofpthioarndwmaerethroedsos,urNceSsPusticliaznatipornov[1o2k,1e6]anto oavcheriehveead of hardwhiagrhe-preersfoorumrcaensceu, tdiluizeattoiotnhe[1r2e,q1u6i]retdo ianctheniesvivee hciogmhp-puetartfioornms awnitchei,ndcuryepttoogtrhaephreicqualigroerdithinmtes.nsive compTturhatidastei-cooonfnfsstwbreaititnwhtienepncarvyespesctutohrgeirtyaw,pahayircefaoarlgaaonrdHithWsmp/eSseW.dT. hcoTis-hdciesosniagspntprairmionaptclhpemaviesenstbatathisoeendwaaopynpfrooimracaphlHetmoWepn/SrtiWonvgicdoet-hdaeesign implecommepnutatitniog-ninatepnpsrivoeacchrytpotopsyrostveimdse ian thraarddew-oarﬀe b[2e2t,w23e]e, nwhseilceutrhietyc,oanrteroal aonf dTLsSp/eSeSdL.pTrohtioscoalpspisroach is baspeedrfoornmeimd pinlesmofetnwtainreg utshiengcommicprouptirnogce-sinsotresn. sIinvethcirsycpotnotseyxst,teFmiesldinPrhoagrradmwmaraebl[e22G,2at3e],Awrrhaiyle the contr(oFlPoGfAT)LdSe/SvSicLesparoretoscuoiltsabislepperlaftofromrmesd, ians stohfetywapreovuidsiengremcoincfrioguprraobcielistyso, rfsle. xIinbitlihtyis acnodntehxigt,hField Programmable Gate Array (FPGA) devices are suitable platforms, as they provide reconﬁgurability,
+ﬂexibility and high performance. This is of special interest for the new FPGA generations; such as
+Zynq from Xilinx or Stratix 10 SoC from Intel, which are equipped with advanced components in a
+
+Electronics 2019, 8, 1238
+
+3 of 18
+
+single chip including ARM microprocessors, Advanced eXtensible Interface (AXI) buses, embedded memory or DSPs, and completely match the System on Chip (SoC) paradigm.
+In this work, we present a carefully designed SW/HW implementation of the client/server TLSv1.2 protocol for IoTCs and IoTSs, which is implemented on low-cost FPGAs/SoCs suitable for IoT applications. The use of modern FPGA-based SoCs enables the achievement of an optimal trade-oﬀ between security, ﬂexibility, area, and speed. Flexibility ensures the possibility of easier algorithm modiﬁcations, while leaving the hardware architecture ﬁxed. Among the supported TLS cipher-suites, we have selected Elliptic Curve Diﬃe-Hellman Ephemeral (ECDHE) [24], Elliptic Curve Digital Signature Algorithm (ECDSA) [25], Advanced Encryption Standard (AES-128) [3], Secure Keyed-hash message authentication (HMAC) [26] and Secure Hash Algorithm (SHA256) for our implementation. These algorithms are all combined to generate 384-bit TLS secret shared keys. The interest on ECCs [7] is justiﬁed by the fact that these systems provide better security with smaller key sizes when compared to the RSA method [27], and they are especially suitable for hardware implementation when binary ﬁelds are used [28].
+Therefore, the paper provides two main contributions: the ﬁrst one is the proposed SW/HW partitioning for eﬃcient TLSv1.2 negotiations. The main idea is to implement the core operation of ECC, which is ECSM, within a scalable hardware coprocessor accelerator and to integrate it around an ARM microprocessor. Meanwhile, the control of ECDHE and ECDSA protocols, the execution of AES-128 algorithm, HMAC and SHA256 functions are ensured by the ARM microprocessor. The second contribution is the proposed internal architecture of the ECC accelerator, with low area requirements while maintaining high performance. It is based on time-area optimized ﬁnite ﬁeld units and the use of dual-port block RAMs as registers. In addition, the I/Os of this ECC accelerator are 32-bit wide, which allow an easier integration with 32-bit microprocessors (e.g., ARM, PowerPC and Microblaze) via 32-bit buses (e.g., AXI and PLB).
+The rest of this paper is organized as follows: Section 2 presents the TLSv1.2 handshake protocol and the considered ECC cryptosystems. Section 3 is devoted to the description of the internal architecture of our ECC accelerator. The proposed FPGA-based IoTS and IoTC designs, the performance evaluation on a Xilinx Zynq device and comparisons with other works in the literature are illustrated in Section 4. Finally, conclusions are presented in Section 5.
+2. Transport Layer Security Protocol
+The TLSv1.2 protocol allows to generate a shared private key between IoTSs and IoTCs for each session based on cipher suite agreed during the TLS handshake. A demonstration of the TLS handshake between IoTC and IoTS is shown in Figure 2.
+The negotiations are based on sending and receiving records, which are blocks of data. Initially, TLS1.2 begins with ClientHello() (step 1), in which the IoTC provides the cipher suite of the supported cryptographic algorithms and compression methods. It also provides random client data (RandIoTC) to be used later in the handshake. Then, the IoTS replies with ServerHello() (step 2) by providing random server data (RandIoTS) and the list of the selected cryptographic and compression methods to be used during the TLS process. In the proposed designs, TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 is the supported TLS cipher suite. Once the Hello step is done, the IoTS and the IoTC calculate in parallel a pair of private/public ephemeral keypairs (steps 3 and 4) using an EC-based keypair generation algorithm [7] and send to the other party the public key. The server uses ECDSA to sign its ephemeral public key (Ps) in Step 4 and sends the signature to the client. On the other side, the IoTC veriﬁes the received signature using the ECDSA veriﬁcation algorithm (Step 5). If the veriﬁcation is successful, the IoTC sends its public key (Pc). Then, a 384-bit shared secret key will be generated (Step 6) by the combination of ECDHE and HMAC-SHA256. The ﬁrst algorithm provides a 256-bit PreMasterSecret key, while, the second generates a 384-bit MasterSecret key. From the latter, two 128-bit (client_write_key, server_write_key) secret keys are extracted. Finally, in order to check if the handshake was not tampered with (Step 7), the IoTC and IoTS encrypt “ping” and “pong” using
+
+The rest of this paper is organized as follows: Section 2 presents the TLSv1.2 handshake
+
+protocol and the considered ECC cryptosystems. Section 3 is devoted to the description of the
+
+internal architecture of our ECC accelerator. The proposed FPGA-based IoTS and IoTC designs, the
+
+performance evaluation on a Xilinx Zynq device and comparisons with other works in the literature
+
+are illustrated in Section 4. Finally, conclusions are presented in Section 5.
+Electronics 2019, 8, 1238
+
+4 of 18
+
+2. Transport Layer Security Protocol
+
+the ATEhSe aTlLgSovri1t.h2mprboytosceorlvaelrlowwrsitteokgeeynearnadtecalisehnatrwedripterikveayt,erkeesypebcettiwveeleyn. ITohTeSns,atnhdeyIoeTxCchsafnogr eeatchhe seenscsriyopntebdamseedssoangesc,ipahndereascuhitpe aartgdreeecdrypdtusrtihnegrethceeivTeLdSmheassnadgsehuaskien.gAthedaepmpornosptrriaattieokneyoftothreetrTieLvSe “hpainndgs”haankde b“eptownege”nmIoeTssCagaensd. OIotThSeriws sisheo,wthneiTnLFSighuarned2s.hake process was tampered.
+
+IoTC
+(1)
+(3)
+
+ClientHello(RandIoTC) ServerHello(RandIoTS)
+
+Send(Ps, Sign(Ps)) (5)
+
+alt
+[ECDSA_check == False]
+Send(failed)
+
+[else]
+
+Send(Pc)
+
+(6)
+Send (AES(ping)) Send (AES(pong))
+(7)
+
+IoTS
+(2) (4)
+(6) (7)
+
+Figure 2. Transport Layer Security (TLS) Handshake demonstration.
+2.1. Elliptic Curve Cryptography
+In ECC, most of elliptic curves are deﬁned over prime ﬁelds (Fp) and binary ﬁelds (GF(2m)) [29]. As binary ﬁelds are more suitable for hardware implementations [23], in this paper we are interested in GF(2m), where the ﬁeld element k is a binary of ﬁxed length m:
+
+k = (km−1km−2 . . . k1k0) / ki ∈ GF(2)
+
+(1)
+
+The arithmetic is deﬁned by the polynomial representation:
+
+K(t) = (km−1·tm−1 + km−2·tm−2 + k1·t + k0)
+
+(2)
+
+An Elliptic Curve E deﬁned over GF(2m) consists of a set of points P represented by the coordinates (xp,yp), where xp and yp are elements of GF(2m) solving the Weierstrass expression [28]:
+
+y2 + x·y = x3 + a·x2 + b / (a,b) ∈ GF(2m)
+
+(3)
+
+The conception of ECC schemes consists of three parts, namely, the curve parameters domain, the key generation and the encryption/decryption algorithms. In the literature, several standard curve domains are recommended with diﬀerent key-length, m, where m is prime number in the set {163, 233, 239, 283, 409, 571}. The sect233r1 (NIST B-233) curve [30], deﬁned over GF(2233), is widely used in TLS1.2. It is recommended for HW implementations when high speed and less area consumption are intended [31].
+The EC-based key generation algorithm results in the (d,Q) keypair, where the private key d is an integer of m-bits and Q is a point on E. The keypair (d,Q) is calculated as follows:
+• Choose an integer d from [1, 2m − 1]. • Calculate Q = d × G, where G is the generator point deﬁned by sect233r1.
+In the literature, several standard cryptographic protocols based on ECs are reported. In this work, we will use ECDHE_ECDSA protocols, as they are used in TLS1.2 for secret key exchange and digital signature, respectively. In the following, we present the ECDHE and ECDSA algorithms.
+
+Electronics 2019, 8, 1238
+
+5 of 18
+
+2.1.1. Elliptic Curve Diﬃe Hellman Ephemeral
+ECDH stands for EC-based Diﬃe-Hellman key agreement protocol. It ensures the establishment of a secret shared key between two parties through an insecure channel. This key could be used by a symmetric cryptosystem for data encryption. In the literature, two versions of ECDH are reported, namely, ECDH static and ECDH Ephemeral (ECDHE). The diﬀerence is that the ﬁrst version always uses the same keypairs, while the second generates new keypairs for each connection. The ephemeral version is recommended in TLS protocols. The shared secret key is obtained by applying the following steps:
+• IoTC chooses integer n1 from [1, 2m − 1] and computes Q1 = n1 × G. • In parallel, IoTS chooses integer n2 from [1, 2m − 1] and computes Q2 = n2 × G. • IoTC and IoTS exchange Q1 and Q2. • IoTC and IoTS compute Q = n1 × Q2 and Q = n2 × Q1, respectively. • Extract the shared secret key from the coordinates of the shared point Q.
+We note that ECDHE requires the execution of four ECSMs. However, the computation of Q1 and Q2 are performed in parallel, as well as the computation of Q = n1 × Q2 and Q = n2 × Q1. The execution time (TECDHE) of ECDHE algorithm can be estimated as:
+
+TECDHE ~ Trand + 2·TECSM
+
+(4)
+
+where Trand represents the execution time of the m-bit secure random generation and TECSM corresponds to the execution time of single ECSM.
+
+2.1.2. Elliptic Curve Digital Signature Algorithm
+ECDSA is an EC-based DSA algorithm proposed in 1992 by Scott Vanstone [25]. It is used for data integrity to avoid message tampering during transfer by signing the message. This protocol consists of two algorithms, namely signature generation and signature veriﬁcation. In our work, the ﬁrst procedure is performed by the IoTS to sign its ephemeral public key. Meanwhile, the second procedure is executed by the IoTC to check if the received public key is appropriate to the server or to a third-part. Pseudocode descriptions of the two algorithms are presented in Algorithm 1 and Algorithm 2, respectively, while their detailed justiﬁcation and description can be found in [32,33].
+
+Algorithm 1. Elliptic Curve Digital Signature Generation.
+Inputs: private key d, message msg, domain parameters (m, a, b, G, n, h) Outputs: Signature (r, s)
+1. Generate random integer k ∈ [1, n − 1] 2. Compute e = Hash(msg) 3. Compute R = k × G 4. Set r = xR mod n. If r = 0 return to step1 5. Compute s = (k−1 × (e + d × r)) mod n 6. The signature for msg is then (r, s)
+
+In our work, the message msg of Algorithm 1 is the concatenation of the coordinate of the IoTS ephemeral public key. The resulting signature of the message msg is represented by (r, s). The execution time (Talg1) of Algorithm 1 can be estimated as:
+
+Talg1 ~ Trand + THash + TECSM + TMI + 2·TMM + TMA
+
+(5)
+
+Talg1 is linked to the following execution times: secure random generation of k (Trand), secure hash function (THash) for e computation and single ECSM (TECSM) for computing the coordinates of the
+
+Electronics 2019, 8, 1238
+
+6 of 18
+
+point R, Modular Inversion (TMI), two Modular Multiplications (TMM) and Modular Addition (TMA) to obtain s.
+According to Algorithm 2, the veriﬁcation of the signature requires the execution of the secure hash function, the computation of a MI and two MMs for v, u1 and u2 calculations.
+Algorithm 2. Elliptic Curve Digital Signature Veriﬁcation.
+Inputs: message msg, signature (r, s), domain parameters (m, a, b, G, n, h), senders public key P Outputs: accept or reject signature
+1. verify r, s ∈ [1, n − 1] 2. compute e = Hash(msg) 3. compute v = s−1 mod n 4. compute u1 = e × v mod n 5. compute u2 = r × v mod n 6. compute X = u1 × G + u2 × P 7. if X = O → reject signature 8. else if Xx mod n = r → accept signature
+
+To compute the coordinates of the point X, two ECSMs and single Elliptic Curve Point Addition (ECPA) are required. The execution time (Talg2) of Algorithm 2 could be estimated by Equation (6).
+
+Talg2 ~ THash + 2·TECSM + TECPA + TMI + 2·TMM,
+
+(6)
+
+To use ECDHE_ECDSA, both the IoTC and IoTS are required to be able to perform ECSM, which is the main operation of most ECC protocols. This operation is considered as the most expensive operation for embedded systems in terms of hardware requirements and timing performance. Therefore, we propose to implement a dedicated ECC hardware accelerator for high-speed ECSM computation in order to enhance the overall performance of TLS execution, while also taking in consideration the area usage. In the following, the considered ECSM algorithm and the internal hardware architecture of ECC coprocessor are described.
+
+3. ECC Accelerator Design
+Depending on the representation of the scalar and the points, several fast and regular ECSM algorithms are reported in the literature [34]. In this work, the ECSM is performed based on the Montgomery Power Ladder (MPL) algorithm over projective coordinate system [29]. Making ﬁeld operations explicit, this algorithm uses the binary representation of the scalar k as it is shown in Algorithm 3. The use of the MPL algorithm [35] is often suggested to withstand side channel attacks by performing the Elliptic Curve Point Addition (ECPA) and Elliptic Curve Point Doubling (ECPD) in parallel regardless of the current scalar bit value. In the other hand, the introduction of the projective point coordinate system [36] within ECPA and ECPD computations ensures high performance by avoiding Modular Inversion (MI) execution at each iteration of the main loop. This operation is the most complex and costly to implement on embedded systems when compared to Modular Addition (MA), Modular Squaring (MS) and Modular Multiplication (MM), also required in ECPA and ECPD calculations. Hence, the combination of MPL and projective system allows the enhancement not only of design security but also of the overall cryptosystem performance. These features enable the proposed algorithms for eﬃcient ECC hardware implementations when security, high-speed and low-area requirements are targeted.
+The computation of ECSM based on Algorithm 3 requires three steps: initialization (lines 1 and 2), main loop (lines 3 to 11) and calculation of the resulting point coordinates (lines 12 and 13). The ﬁrst step performs two ﬁeld squarings (line 1) and a single ECPD (line 2). The second step performs, at each iteration, ECPA (lines 5 and 8) followed by ECPD (lines 6 and 9). These operations are executed in
+
+Electronics 2019, 8, 1238
+
+7 of 18
+
+the projective system by performing a set of ﬁeld additions, ﬁeld multiplications and a ﬁeld squaring. In the ﬁnal step, two ﬁeld inversions are required (lines 12 and 13) to obtain the coordinates (x3,y3) of the resulting point.
+
+Algorithm 3. Montgomery ladder over projective coordinates, making ﬁeld operations explicit.
+
+Inputs: k=km−1km-2 . . . k1k0, P(x,y), domain parameters (m, a, b, G, n, h) Outputs: k × P = (x3, y3)
+
+1. X1 = x, Z1 = 1, X2 = x4 + b, Z2 = x2 2. P1 = P, P2 = 2P \\ ECPD 3. for i = m − 2 down to 0 do
+
+El4ec.trIofn(ikcIs =20=190,)8t,hxeFnOR PEER REVIEW
+
+5. T = Z2; Z2 = (X1×T + X2 Z1)2; X2 = x Z2 + X1 X2 Z1 T \\ ECPA
+
+56.. T =TX=1;ZX21;=ZT2 =4 +(Xb1Z×T14;+ZX1 2=ZT1)22Z; 1X2 2 = x Z2 + X\1\XE2CZP1DT
+
+\\ ECPAziwei
+
+67.. elseT = X1 ; X1 = T4 + b Z14 ; Z1 = T2 Z12
+
+\\ ECPDziwei
+
+78.. Te=lseZz1i;wZe1 i=(X1Z2 + X2 T)2; X1 = xZ1 + X1X2Z2T \\ ECPA
+
+89.. T =TX=2;ZX12;=ZT1 =4 (+Xb1ZZ224+; ZX22 =T)T22;ZX221 = xZ1 + X\\1XE2CZP2TD
+
+\\ ECPAziwei
+
+91.0. enTd =if X2 ; X2 = T4 + bZ24; Z2 = T2Z22
+
+\\ ECPDziwei
+
+1101. . 111123. .. 12.
+
+xexyen3n33e=dnd==dXffX(oox1ir1rZf+Zzz1ii1(xww−(13−))zee1)[iii(wXe1i+
+
+xZ1)(X2
+
++
+
+xZ2)
+
++
+
+(x2
+
++
+
+y)(Z1Z2)](xZ1Z2)(−1)
+
++
+
+y
+
+7 of 18
+
+13. y3 = (x + x3) [(X1 + xZ1)(X2 + xZ2) + (x2 + y)(Z1Z2)](xZ1Z2)(−1) + y TThhee iinntteerrnnaall aarrcchhiitteeccttuurree ooff tthhee pprrooppoosseedd EECCCC aacccceelleerraattoorr ffoorr EECCSSMM ccoommppuuttaattiioonn bbaasseedd oonn
+AAllggoorriitthhmm 33 iiss pprreesseenntteedd iinn FFiigguurree 33..
+
+FFiigguurree 33.. HHaarrddwwaarreeaarrcchhiitteeccttuurree ooff EECCCC (Elliptic Curve Cryptosystems) accelerator.
+TThhee pprrooppoosseedd aarrcchhiitteeccttuurree ccoonnssiissttss ooff tthhrreeee ﬁfinniittee ﬁfieellddaarriitthhmmeettiiccuunniittssoovveerrGGFF((22223333)) ((aann aaddddeerr,, aa ssqquuaarreerr aanndda amumltuipltliiperl,iecra,llceadllReNd ORKNOOAK1O1CA)1, 1dCu)a,l-pdouratl-RpAoMrt (RdAp_MRA(dMp)_, Ra A23M3-)b, itare2g3i3st-ebrit(rreegg_iks)t,ear (croengt_rko)l,uanciot,natnrodl tuhnriete, amnudlttihprleeexemrsul(tmipulexx).erTsh(emﬁuexld). Tunheitsfieenldsuurneittsheencsoumreputhteatcioonmspouftﬁateilodnasdodf iftiieolnd, aﬁdedlditisoqnu,afrieinldgsaqnudarﬁinegldanmdufliteilpdlimcautilotinp,lirceastpioenc,tirveeslpye.ctTivheelyd. pT_hReAdMp_RbAloMckbilsocukseisdufsoerdsftoorrisntogritnhge tchoeorcdoionradteinsa(txe,sy)(o𝑥f, 𝑦th) eopf othinet pPo, tinhte i𝑃n,tethrme eindtieartme reedsiualttes orefsAullgtsoroifthAmlg3oarinthdmthe3 caonodrdtihneatceoso(rxd3i,yn3a)teosf (t𝑥he, 𝑦res)uolftinthgeproeisnutl.tiMngeapnowinhti.leM, ethaenwrehgi_lek, rtehgeisrteegr_iks uresgedistteor sitsoruesethdetsocastlaorrevathlueeskcatloarmvaanlaugeekthtoe mmaaninagloeotph.eImt iasianlsloooups.eIftuilsaaslsteomupseofrualryasstteomrapgoeroafry(xs,yto) rvaagleueosf b(xe,fyo)rveatlruaenssfbeerfroinreg ttrhaenmsfetorrtihneg RthAeMm. tTohtehceoRnAtroMl .uTnhiteiscorenstproolnusnibilteisforresthpeoncosiobrldeinfoartitohne bceotowrdeeinnatthioeninbteetgwraeteendtchoeminptoengernattesdofcothmepinotneernntasl oarfcthhieteicntuterrenfaolraprechrfiotermctuinrge EfoCrSpMer. fTohrme pinrogpEoCseSdMa.rcThhietepctruorpeopserodvaidrcehsiatencetuxcreellpernotvtirdaedse-aonﬀebxectewlleeennt tarraedaea-nofdf pbeetrwfoeremnaanrceea, banasdedpeornfotrhmeafnoclleo,wbiansgedasopnetchtse: following aspects:
+1. Exploiting the block RAMs available in FPGA devices within the internal architecture of ECC
+accelerator instead of using registers, thus saving Look-Up Tables (LUT) resources at the
+expense of introducing some extra clock cycles.
+2. Integrating the I/O interface into the ECC processing unit, taking advantage of the displacement reg_k.
+3. Avoiding the use of a dedicated field divider/inverter, by means of using the Itoh-Tsujii
+algorithm (ITA) [7], thus requiring only the multiplier and the squaring units. In this case, our
+
+Electronics 2019, 8, 1238
+
+8 of 18
+
+1. Exploiting the block RAMs available in FPGA devices within the internal architecture of ECC accelerator instead of using registers, thus saving Look-Up Tables (LUT) resources at the expense of introducing some extra clock cycles.
+2. Integrating the I/O interface into the ECC processing unit, taking advantage of the displacement reg_k.
+3. Avoiding the use of a dedicated ﬁeld divider/inverter, by means of using the Itoh-Tsujii algorithm (ITA) [7], thus requiring only the multiplier and the squaring units. In this case, our ECC accelerator needs 353 clock cycles for performing 231 squarings and 10 multiplications required for GF(2233) ﬁeld inversion execution. This performance overhead is assumable, taking into account that only two ﬁeld inversions are required.
+
+It is worth mentioning, that the input (i_port) and the output (o_port) ports of the proposed ECC accelerator are 32-bit wide. It means that this ECC accelerator can be easily integrated around various 32-bit microcontroller through 32-bit buses.
+
+E3l.e1c.trFoniieclsd2M019u,l8t,ipxlFieOrRUPnEiEtR REVIEW
+
+8 of 18
+
+As sshhoowwnniinnAAlglgoorritihthmm33, t,htehefieﬁledldmmulutilptilpielrieirs itshethoenoenheavhianvginthgetmheomst onsottincoetaibcleeabeflfeecetﬀoencttohne ptheerfpoermrfoarnmceanocfetohfethsceaslcaar-lparo-ipnotinmtumltuipltliypilnygin, gth, uthsurserqeuqiurinrigngaaccaarerefuful lddeessiiggnn.. TThhee RNOKOA11C multiipplliieerr uniitt is implementedd based on an improvement of the Karatsuba–Ofman Algorithm (KOA) [[3377]],,nnamamededNoNno-nO-vOevrlearplappinpginKgOKAO(ANO(NKOAK)OmAu) ltmipuliletirp[l3ie8r]. [T3h8e].NTOhKe ONAOmKuOlAtiplmieurlatilplolwiers atollopwersfotrompﬁereflodrmmufliteipldlicmatuioltnipinlicoantliyononine colnoclyk ocyncelec,ltohcuksceyncaleb,litnhguhsiegnha-pbelirnfogrhmiganhc-peeErCfoCrmacacnelceeraEtCorCs. aHcocewlervaetro, rasr.eHa roewquevireerm, aernetas arreequexirceemsseivnetsfoarreitseximcepslseivmeenfotartitosnimonploewm-ecnotsattdioenviocnesl[o2w2]-.coInst[2d2e]v, itcweos [m22o]d. iIﬁnca[2ti2o]n, stwoof NmOoKdiOfiAca,trioenqsuiorifnNg O3 KanOdA9, rceloqcukircinygcle3safnodr c9omclopclekticnygclaesﬁefoldr cmoumltpipleltiicnagtioanf,iealrde mprueslteinptleicda.tiTohne,seamreodipﬁrceasteionntesd, n. amThedesNe OmKOodAi3fiCcaatniodnNs, OKnaOmAe9dC, rNesOpKecOtiAve3lCy, reaqnudire NleOssKaOreAa 9bCu,t raersepneoctisvueiltya,brleqfuoirrueslesisnaoruear EbuCtCasrecanlaort-spuoiitnatbmleufoltripulsiceaitnioonuurnEiCt,Cdusceatloart-hpeolianctkmouf lotiuptlpicuattrioegniustneirts,. dInuefactot, tthheeulsaeckofoRfAoMutpbluotckresginisstteerasd. Ionf rfeagcits,tethrsemuaskeeos fneRcAesMsarbylotockrsegiinssteteratdheorfesruegltisptreorvsidmeadkbeys ntheecemssualrtyiptloier.egFisgtuereth4eshreoswuslttphreopvriodpeodsbeyd tahrechmituecltiuprleieorf. tFhigeuRrNe O4 KshOoAw1s1tChempurlotpipolsieerd, warhcihcihtemcteuertes othf ethreqRuNireOmKeOnAts1i1mCpmosueldtipblyietrh,ewuhsiecdh omf eReAtsMthaes rreeqguisitreerms.enIttsprimespenotsseda rbeycuthrseivuesestdruocftuRrAe,Mthuas rceognisitsetrisn.gItonpraesloewntesr-alerveecluNrsOivKeOstArumctuulrteip, ltiheur,saccoonnstirsotlinugniot,ntwa olomwuelrt-ilpelveexlerNs,OtKwOo AXOmRunlteiptwlieor,kas, caonndtrtohleuRnTi,t,RtEw,oRmOualntidplMexOerrse, gtwistoerXsO. TRhnisetnweowrkms,ualtnidpltiehrerReqTu, RirEes, R11Ocaloncdk McyOclersegfoisrtepresr.fTohrmisinegwa mﬁeuldltimpluielrtipreliqcuaitrioesn11 clock cycles for performing a field multiplication
+
+FFiigguure 4. IInntteerrnnaallaarrcchhiitteeccttuurree ooff RRNNOOKKOOAA1111CC fﬁield multiplier unit.
+TTaabbllee 11 sshhoowwss ssyynntthheessiiss rreessuullttss ccoommppaarriinngg NNOOKKOOAA99CC [[2222]] ttoo RRNNOOKKOOAA1111CC mmuullttiipplliieerrss oovveerr GGFF((22223333))fﬁinnitietefﬁieelldd..TThheseesereresusultlstshhaavveebbeeeennoobbtatainineedduussininggXXiliilninxxIISSEE1144..44 oovveerr VViirrtteexx 55 ddeevviicceess ((xxvv55vvllxx111100--33ff11776600)).. AAssiittiisssshhoowwnn,,tthheennuummbbeerrooff LLUUTTss iiss aallmmoosstt tthhee ssaammee,, bbeeccaauussee tthhee aaddddiittiioonnaall rreeggiisstteerr rreeqquuiirreedd bbyy RRNNOOKKOOAA1111CC iiss iinncclluuddeedd iinnttoo tthhee LLUUTTss ooccccuuppiieedd bbyy tthhee XXOORR nneettwwoorrkk.. SSmmaallll differences in the number of LUTs and delay are due to optimizations performed by the software tool. Regarding the number of clock cycles, RNOKOA11C requires 11 clock cycles instead of the 9 clock cycles required by NOKOA9C, but it fits the requirements for being the multiplier unit of our ECC accelerator, which has been named MP_ECC_B-233_RNOKOA11C.
+
+Electronics 2019, 8, 1238
+
+9 of 18
+
+diﬀerences in the number of LUTs and delay are due to optimizations performed by the software tool. Regarding the number of clock cycles, RNOKOA11C requires 11 clock cycles instead of the 9 clock cycles required by NOKOA9C, but it ﬁts the requirements for being the multiplier unit of our ECC accelerator, which has been named MP_ECC_B-233_RNOKOA11C.
+
+Table 1. Synthesis results for NOKOA9C and RNOKOA11C over GF(2233) on Virtex 5 devices.
+
+Design
+NOKOA9C RNOKOA11C
+
+# LUTS
+2366 2344
+
+# Max. Freq. (MHz)
+214 205
+
+# Cycles
+9 11
+
+Total Time @50MHz
+0.18 µs 0.22 µs
+
+Total Time @Max. Freq.
+42 ns 54 ns
+
+3.2. Implementation of MP ECC_B-233_RNOKOA11C
+In order to check the suitability of MP_ECC_B-233_RNOKOA11C for medium-performance applications, such as IoT coordinators/gateways, it has been implemented in a MiniZed board [39] with a Zynq 7Z007S device from Xilinx. This low-cost device includes a single-core ARM Cortex-A9 microprocessor and 14400 LUTs of programmable logic for software/hardware co-design. The software tool used for this implementation has been Vivado 2018.2 from Xilinx. Also, for comparison purposes, it has been implemented on Virtex 5 devices using Xilinx ISE 14.4. Implementation results are presented in Table 2, where MP_ECC_B-233_NOKOA11C is compared to other ECC scalar-point multipliers with similar area.
+
+Table 2.
+
+MP_ECC_B-233_RNOKOA11C implementation results and comparison to
+
+other implementations.
+
+Device
+Virtex 4 (xc4vlx200) Virtex 7
+(xc7v585_T) Virtex 5
+(xc5vlx110-3)
+ZynQ (xc7z020-1)
+Virtex 5 (xc5vlx110-3)
+ZynQ (xc7Z007s)
+
+Design
+Ansari [40]
+Khan [41]
+Sutter [42]
+Parrilla [22] (NOKOA9C)
+This work (RNOKOA11C)
+This work (RNOKOA11C)
+
+# LUTS 13396 7895 13244 6223 3203 3395
+
+# Cycles 5890 5924 8193 14013 20637 20637
+
+Time @50 MHz 117 µs 118 µs 163 µs 315 µs 413 µs 413 µs
+
+From Table 2, it is evident that this new design requires less than half the area of other implementations, while providing similar performance ﬁgures. Thus, it is perfectly suitable for the target application. It should also be noted that our design includes a 32-bit I/O interface, while the other alternatives do not include such feature.
+4. FPGA Implementation of TLS Cryptosystem
+Among the considered TLS cipher-suites, HMAC, SHA256 and AES are characterized by its high-performance implementation due to a relative mathematic simplicity. ECDHE and ECDSA are characterized by its high security but are considered the most time/area consuming as they involve complex operations over large prime numbers. To achieve the best trade-oﬀ between ﬂexibility, area and speed, a SW/HW co-design implementation approach is presented in this work. The proposed partitioning is based on the implementation of ECSM within a compact ECC hardware accelerator for faster execution. The dedicated core is integrated around an embedded ARM microprocessor. The rest of the required operations for TLS negotiation are managed in SW by the processor. Figure 5 presents the hardware architecture of the proposed embedded system. The hardware architecture was
+
+Electronics 2019, 8, 1238
+
+10 of 18
+
+implemented on the Xilinx Zynq-7Z007S SoC device in the Avnet Minized Dev board [39] for both
+
+IoTS and IoTC coordinators. As commented in the previous section, this low-cost device consists of a
+
+single-core ARM Cortex-A9 microprocessor, able to run at up to 666.666 MHZ, along with 100 block
+
+RAMs and 14400 slice LUTs for software/hardware co-design. The MiniZed board also includes a
+
+EMlecutrroantiacs“2T01y9p, e8, 1xDFOXR”PLEBEERER5EKVILE1WDX wireless module for wireless communications.
+
+10 of 18
+
+FFigure 55. .HardHwaradrewaarrcehiatercthuitrecotuf rIeoToSf(IIooTTSer(vIoerTcoSoerrdvienratcoor)oradnidnaIotoTrC) (aInoTd CIloieTnCt c(oIorTdinCaliteonr)t dcoeosirgdnins.ator) designs.
+
+TThhee pprrooppoosseedd aarrcchhiitteeccttuurree ccoonnttaaiinnss aa ssiinnggllee CCoorrtteexx--AA99 AARRMM mmiiccrroopprroocceessssoorr ((PPSS)),, tthhee
+
+MMPP__EECCCC__BB--223333__RRNNOOKKOOAA1111CCaacccceelelerraatotor,ra, nanAAXIXiInitnertceorcnonnenctebctubsuasndanadWairWeleirsesl_emssg_rmcognr tcroonllterro. lTlehre.
+
+TlahtteelraitsteurseisdufoserdthfeorWtihFei WconiFnieccotinonneocftitohne oIofTthSeanIodTISoTanCddIeosTigCnsdwesiitghngsawteiwthaygsattehwatapyrsotvhidatepinrotevrindeet ianctceersnse.tThaeccAesXsI. bTuhs ealloAwXsI 32b-ubsit dalaltoaw/ins st3r2u-cbtiitondeaxtcah/iannsgtreuscbtieotnweeexncthhaenAgeRsMbmetiwcreoepnrocthesesoAr aRnMd
+
+mthiecrEoCpCroacecscseolerraantodr.thIterEuCnsCwaictchelaer5a0toMr.HItzrculoncskw. iTthheaA5R0 MMHprzoccleoscsko.rTehnesuAreRsMnoptrooncelysstohreecnosnutrreosl
+
+noof tthoenElyCtCheacccoenlterroaltoorf bthuet aElCsoCoafcaclellTerLaStoprrobcuetsaselsso. Tohf ealrloTleLsSapssriogcneesdsetso. Tthheeprroolecsesassosriganreeddetoﬁnthede pasrofcoellsoswors:are defined as follows:
+
+• • • • •
+
+GGeenneerraattiioonn ooff 225566--bbiitt rraannddoomm nnuummbbeerrss.. Execution of AES, HMAC and SHA256 functions. CExoemcuptuiotantioofnAoEf Sfi,nHitMe fAieCldainndveSrHsiAon2s5,6mfuunltcitpiolincas.tions and additions required for ECDSA.
+
+•• CCoonmtrpoultoaftitohneoMf ﬁPn_EitCe Cﬁe_lBd-2in33v_eRrsNioOnsK,OmAu1lt1iCpliaccacteiolenrsataonrd. additions required for ECDSA.
+
+•• CCoonnttrrooll ooff EthCeDMHPE_EanCdC_EBC-D23S3A_RaNlgOorKitOhmA1s.1C accelerator.
+
+•• CCoonnttrrooll ooff iEnCteDrnHeEt caonmd mECuDniScAatiaolngobreittwhmeesn. the IoTS and the IoTCs.
+
+• Control of internet communication between the IoTS and the IoTCs.
+
+4.1. ECC Accelerator Integration around ARM Processor 4.1. ECC Accelerator Integration around ARM Processor
+For connecting the ECC accelerator with the ARM processor through the AXI bus, Xilinx’s IntellFeoctrucaol nPnroepcteirntgy ItnhteerEFCaCce a(IcPcIeFle)riastuosrewd iftohr t3h2e-bAitRdMatap/irnoscterusscotirontheroxcuhgahngthinegA, aXsIitbiusss,hXoiwlinnxi’ns FInigteulrleec6tu. aTlhPerIoPpIeFrtiys cInotnefriFgaucreed(IPwIiFt)hisfouusred32f-obrit32re-bgiitstdearsta: /IinnssItnru, cDtiaotnaIenx, cIhnasnOguitngan, adsDitaitsasOhuotw. Tnhine pFrigoucerses6o.r TuhseesIPaIFseits ocof ninﬁsgtururectdiownitchodfoeus rth32ro-buigthretghiesteInrss:InInrseIgni,sDtearttaoInm, IannsaOguettahnedEDCaCtacOouret.. TThhee spercoocnesdsorreguissetesraisseut osefdintsotrutrcatniosnfecrotdheesdthigroitusgohf tthheeIinnspInutrepgoisintetrctooomrdainnaagteesthaenEdCthCecoscrae.laTrhferosmecotnhde AreRgMistetor itshuesreedq_tok trreagnissfteerr.thTehedicgointstroofl tuhneitinmpuakt epsouinstecoofotrhdeintahtiersdarnedgitshteerstcoalnaortfirfoymthtehperAocReMssotor tthhaetrtehqe_ckoroergdiisnteart.esTohfethcoenrtersoullutinnigt pmoainktesfruosme tohfethEeCtShMirdcormegpisutteartitoonnsoatriefyrethadeyp.rTohceeslsaosrt trhegatisttheer ecnoosurdreinsatthees torfatnhseferresoufltthinegrepsouinlttinfrgompotihnet cEoCoSrMdincaotmesptuotathtieonpsroacreesrseoard.y. The last register ensures the transfer of the resulting point coordinates to the processor.
+
+Electronics 2019, 8, 1238 Electronics 2019, 8, x FOR PEER REVIEW
+
+11 of 18 11 of 18
+
+Figure 6. IInntteeggrraattiioonn ooff EECCCC accelerator with AXI (Advanced eXtensible Interface) bus.
+
+TToopperefroformrmECESCMS,Mth,retherseteepsstaerpesreaqrueirreedqfuoirreeadchfoerxeecaucthione,xneacmuteiolyn, ,ECnCamcoerlye,reEseCtC, tracnosremirsessioetn, torfatnhseminispsuiotsn, aonfdthreetriinepvuintgs, oafntdherreetsruielvtiinnggpoofintthceoorersduinltaintegs. pBoeifnotrecostoarrdtiinngattehse. EBCefSoMrecostmarptiuntgatitohne, EthCeSAMRMcomprpoucteastsioonr ,rethseetsAtRhMe EpCrCocaecscseolrerraetsoertsbythseenEdCiCngatchceel0erxat0o0r0b0y00s0e0n1diinnsgtrtuhcetio0nx. 0A0f0te0r00th00a1t, itnhsetrcuoncttiroonl.uAnfittesrtothreast,stihxeteceonn8tr-boiltudniigtiststoorfetshseixEtCeeSnM8-ibniptudtigpiotsinotfctohoerEdCinSaMtesinfoplulotwpoedinbt ycoeoigrdhitn8a-tbeist fdoilgliotws oefdthbey seciaglhatr8t-rbaintsdmigitittesdoffrtohme stchaelaprrotrcaensssomrittotetdhefrdomp_RthAeMpr.oItcemssuosrt tboetnhoeteddp_thRaAt Mth.eIpt rmocuesstsboer ntroatnesdmthitasttthhee0pxr0o0c0e0s0s0o0r0t2rainnssmtriutscttihoen0axf0te0r0e0a0c0h00d2iginitsttroupctrieopnaareftethreeaccohntdroigliut ntoitptroerpeacreeivtheethcoennterxotl udnigiittt.oOrnecceeitvweetnhteyn-feoxutrd8i-gbitit. Odingcitestowfetnhteyi-nfopuurts8-abreit ldoiagditesdo, fththeecoinnptruotlsuanreit lmoaadneadg,etshtehceoﬁnetlrdoluunnitist mtoapneargfoesrmthEeCfiSeMld cuonmitsputotapteiornfosr.mDuErCinSgMthcoismtipmueta, tihoenIsn. sDOuurtinrgegtihsitsertivmaelu, tehies I0nxsO00u0t0r0e0g0is0t0e.rWvahluene itshe0 ExC0C00a0c0c0e0le0r0a. tWorhceonmtphleetEeCs Ctheacecxeelecruattiorn,cothmepcloentetsrotlhueneixtecchuatniogne,stthheecIonnstOroult urengitisctheranvgaelusethtoe I0nxsO00u0t0r0e0g0is0t3erinvoalrudeertoto0nxot0i0fy00t0h0e0p03roicnesosrodretrhtaot nthoetiEfyCtShMe perxoecceustsiorn tihsadtotnhe,EthCeSnMseenxdescustiixotneeins d8-obnite,dtihgeitns osefnthdes rseixsuteletinng8-pboitindtigcoitosrodfintahteesr.esTuhletinpgropceosinsotrcuoosersditnhaete0sx. T00h0e0p00ro0c0e4sisnosrtruuscetsiotnheaf0texr 0re0c0e0i0v0in00g4eiancshtrduicgtiitotnoaofrtdererrethceeivcoinngtreoalcuhnditigtoitsteonodrdtheer ntheextcodnigtrito.l unit to send the next digit.
+Table 3 summarizes the hardware resources occupied by the ECC accelerator and the proposed architecture for IoTS and IoTC coordinators on the ZZyynnq-7Z007S device. Thhee results are shown in terms of slice LUTss aanndd sseelleecctteedd RRAAMM bblloocckkss..
+
+TTaabbllee 33.. HHaarrddwwaarree rreessoouurrcceess rreeqquuiirreemmeennttss ooff tthhee pprrooppoosseedd aarrcchhiitteeccttuurreess..
+
+DesiDgnesign
+
+# L#ULTUSTS
+
+RRAAMMs s
+
+ECC aEcCcCelaecrcaetloerrator 33935395
+
+77
+
+IoTSIoTS
+
+85083503
+
+99
+
+IoTCIoTC
+
+85083503
+
+99
+
+From Table 3, it must be noted that the difference in hardware resources between IoT designs and tFhreomECTCabalcece3l,eirtamtour sist b51e0n8oLteUdTtshaant dth2e RdAiﬀMerse.nTcheisinishdarudewtoartehereAsoXuIricnetserbceotnwneeecnt bIouTs danesdigthnes wanidretlehses_EmCCgraccocnetlreorlalteorr. Tish5e1p0r8oLpUosTesdaEnCdC2aRcAceMlesr.atTohrirseiqsudiruees toontlhye24A%XIoifnttheerctootnanleacvtabiluasblaenLdUthTes winirtheleestasr_gmegterdcodnetvrioclel.eMr. Teahnewphroilpeo, tsheedoEvCeCraallcdceelseirgantoorccreuqpuieirse6s0o%nloyf2t4h%emo.fMthoeretootvaelra,vthaielapbrloepLoUseTds ainrcthhietetcatrugreeterdeqdueivreicseo. nMlyea9nbwlohcikleR, tAheMosv. erall design occupies 60% of them. Moreover, the proposed
+architecture requires only 9 block RAMs.
+
+4.2. Software Development 4.2. Software Development
+The proposed IoTS and IoTC coordinators run on Embedded Linux by loading the Linux boot imagTehfoerpZroypnoqse(BdOIoOTTS.bainnd) aIonTdCthceooLridnuinxastoyrsstermunimonagEem(bimedadgee.dubL)infiulexsbtyo ltohaedQinSgPtIhfelaLshinaunxdbothoet eimMaMgeCfomreZmyonrqy,(BreOsOpeTc.tbiivne)lya,nbdotthheaLvianiulaxbsleysotnemthiembaogaerd(i.mTahgees.eubfi)leﬁsleasretogtehneeQraStePdI ﬂbayshmaenadnsthoef XeMiliMnxCPmeteamlionruyx, r2e0s1p8e.c2titvoeolyl,bbaostehdaovnailtahbelehoanrdtwheabreoadreds.cTrihpetsioenﬁlfeilsea(rbeitgsetnreearamte.bditb)yomf tehaensporof pXoilsiendx
+
+hardware architecture. The idea behind the use of embedded Linux is that the OS allows flexible use
+
+of the WiFi module for internet communication between the IoTS and IoTCs using TCP/IP
+
+Electronics 2019, 8, 1238
+
+12 of 18
+
+EPleecttarolinnicus x202109,188,.x2FtOoRolPbEaEsReRdEoVnIEtWhe hardware description ﬁle (bitstream.bit) of the proposed har1d2wofar1e8 architecture. The idea behind the use of embedded Linux is that the OS allows ﬂexible use of the WiFi cmlioedntu/lseerfvoerrinstoecrknetsc. oFmigmurueni7castuiomnmbaetrwizeesnththeesIoofTtwSaarneddIeovTeClospumsienngtTrCeqPu/IiPrecdlietonti/mseprvleemr seonctktehtse. TFiLgSu1r.e2 7prsoutmocmola.rizes the software development required to implement the TLS1.2 protocol.
+
+Client/Server_TLS.py
+
+socket.socket ()
+
+random.rand range()
+
+Static Shared Library (AES_ECC.so)
+
+hmac.new() has hlib.sha256()
+
+ECC.c
+
+AES.c
+
+ECDSA()
+
+ECDHE()
+
+Encryption() Decryption()
+
+MI() MM() MA()
+
+ECSM_drivers.c
+VR_adr_hw() Reset_hw() Send_Crd_sclr() Get_resu lt()
+
+FFiigguurree 77.. TTLLS software functions.
+
+TToo iimmpplleemmeenntt tthhiiss TTLLSS11..22 pprroottooccooll bbeettwweeeenn tthhee IIooTTSS aanndd IIooTTCC ccoooorrddiinnaattoorrss,, SSeerrvveerr__TTLLSS..ppyy aanndd CClliieenntt__TTLLSS..ppyy ppyytthhoonn ccooddeess hhaavvee bbeeeenn ddeevveellooppeedd ffoorr eeaacchh ddeessiiggnn,, rreessppeeccttiivveellyy.. PPyytthhoonn hhaass bbeeeenn uusseedd ininordoerdr etor extoploeixt psolociktets, oracknedto, mr,ahnadsohmlib, ahnadshhlmibacalinbdrarhiems afocr TliCbrPa/rIPiessocfkoert cToCmPm/IuPniscoatcikoent, craonmdmomungiceanteiornat,iorann,dSoHmA2g5e6nearnadtioHnM, SAHCAe2x5e6cuantidonHs,MreAspCeecxtievceulyti.oSnisn,creePspyethctoivneilsyi.nStienrcperePtyetdhcoondies, winhteicrphrmetaekdescoitdsee,xwechuitciohnmslaokweesr,itws eepxerocupotisoentosliomwpelre,mwenetpthroepAoEsSe atondimECpClemalegnotritthhme sAiEnSCafnodr fEasCteCr aelxgeocruittihomnss. iTnhCenfo, rwfeasgteenr eerxaetceutthioenssta. tTichesnha, rweed gliebnrearrayte(AthEeS_sEtaCtiCc .sshoa)rferodmlibthraerrye(sAulEtiSn_gECCCco.sdoe) ftroobme timheproerstuedltianngdCusceoddeintoCblieenimt/Speorvrteerd_TaLnSd.puyseﬁdleisn. CThlieenCt/cSoedrveearn_dTLthSe.psytaftiilcessh. aTrheedClibcroadrey aanredgtehneesrtaatteidc suhsainrgedthleibXrailriynxaSreofgtwenaereraDteedveulosipnmgetnhteKXitil(iXnxDSSKof)ttwooarl.eTDheevsehlaorpemd elinbtraKriyt c(oXnDsSisKts) otfotowl.oTChefusnhcatrieodn lﬁiblersa,rnyamcoenlysiAstEs So.cf atnwdoECCCf.cu.nTchtieonﬁrsfitleﬁsle, dneaﬁmneelsyAAEESSe.nccraynpdtioEnC()Ca.cn.dTdheecryfiprtsitonfi(l)efudnecftiinoenss.ATEhSe esenccorynpdtﬁiolne(d) easncdribdeescrEyCpDtiSoAn(())faunndctEioCnDs.HTEh(e) fsuencocntidonfsilefodrepsecrrfiobrems EinCgDthSAe (c)oannsiddEerCeDd HECEC() fpurnoctoticoonlss. fTohreptewrfoofrumnicntgiotnhseacroenbsaisdeedreodnEthCeCEpCrCo_todcroivlse.rT.chﬁeletwanodfuﬁnncittieoﬁnesladrfeubnacstieodnos nretqhueirEeCdCin_dthrievEerC.cDfSilAe aanlgdorfiitnhimte.fiIetlmd ufustnbcetionnosterdeqthuaitrethdeinintphuetsEaCnDdStAheaolguotpriuthtsmo.fItthme AusEtSbaenndoEteCdCthfuant cthtieoninspauretsbaanseddtohne oraudtpixu-2ts8 aonfdtrhaedixA-2E3S2 raenpdresEeCntCatiofunns,crtieosnpsectairveelyb.aRseaddixo-n28 risaduisxe-d28sinacnedthreadAiExS-2a32lgorerpitrhemsepnetarftoiornmss, r8e-bspiteocptievrealtyio. nRsa,dwixh-i2le8,irsaudsixe-d23s2iniscecotnhseidAeEreSdaflogroEriCthCmalpgoerrfitohrmmss n8o-bt iotnolypebreactaiounses,thwehAilRe,Mraidsiax-3223-2biist cmoincsriodperroecdesfsoorrEbCuCt aallsgoofroitrhtmhesAnoXtI o3n2-lybibt ebcuasuwsehtehree AdaRtMa/inisstaru3c2t-iboint mariecrtroapnrsofceersrseodrdbiugitta-blsyo-dfoigritthine AseXriIal 3m2-obdite. bTuhse rwephreerseendtaattiao/ninosftrluarcgtieonnumarbeertsrainnsrfaedrrixed28 danigdit-rbayd-idxi2g3it2 isinpesreforiraml edmiondPe.ythTohne rbeapsreedseonntathtieonctyopf elsa.rcg_einnt ulimbrbaerrys. TinheraEdCixDS2A8 (a)nfdunrcatdioixn r2e32quisirpesertfhoermcoemdpiuntaPtyiothnoonf MbaAse, dMoMn atnhde cMtyIp. Iens.tch_einEt CliDbrSaAryp. rTohtoecEoCl, DMSAA,(M) fMunacntidonMrIeqcoumirepsutthateiocnosmopvuetra2ti5o6n-boitf oMpAer,aMndMs aarnedreMquI.irIend tfhoer AEClgDoSriAthpmro1toancodl,AMlgAo,riMthMm a2n. dThMesIecocommppuutatatitoionnssoavreere2n5s6u-rbeidt obpyetrhaendMsAa(r)e, rMeqMu(i)readndfoMr AI()lgfuornicthtimon1s. aInndfaActl,gMorMithismp2er. fTohrmeseedcboamsepdutoantioMnosnatrgeomenesruyreraddbixy-2th32eMMoAd(u)l,aMr MMu()ltaipnldicMatiIo()nfaulngcotriiotnhsm. I[n27f,a4c3t],. MInMthies optehrefrorhmanedd,bMasIedisoenxeMcuotnetdgobmy emryodraudlaixr-2e3x2pMonoednutliaartiMonul(tMipelixcpa)tiaocncoarlgdoinrigthtmo F[2e7rm,43a]t.’sInlittthlee oththeoerrehman[d7],,MasI iitsiesxsehcouwtend ibnyEmquoadtuiolanr(e7x).poTnheisnttihaetioornem(Maenxdp,)caocncsoerqduinengttloy, FEeqrumaatito’snli(t7t)le, atrheeovraelimd w[7h],eans nitiisspsrhiomweninitnegEeqru. aTthioenea(7s)i.esTthwisatyhetoorpeemrfoarnmd,Mcoenxspeqisutehnetllye,ftE-tqou-raitgiohnt b(7in),aaryremveatlhidodw[h4e4n]. n is
+
+prime
+
+integer.
+
+The
+
+easiest
+
+way
+
+to
+
+perfAor−m1 mMoedxpn
+
+is =
+
+Athne−l2emft-otod-rnight
+
+binary
+
+method
+
+[44].
+
+(7)
+
+A-1 mod n = An−2 mod n
+
+(7)
+
+TThhee EECCCC__ddrriivveerr..cc ﬁfillee ccoonnttaaiinnss CC ddrriivveerrss ttoo ccoonnttrrooll tthhee EECCCC aacccceelleerraattoorr.. IIttiiss ccoommppoosseedd ooff ffoouurr ffuunnccttiioonnss:: rerseeste_th_hww()(,)s,esnedn_dc_rcdr_ds_cslrc(l)r,(G), eGt_erte_sruelstu()lta(n) danVdR_VaRd_r_ahdwr_(h).wT(h).e fTirhset tﬁhrreste tfhurnecetiofunnscatliloonws
+
+to reset the ECC accelerator, send the inputs of Algorithm 3, and retrieve the resulting point
+
+coordinates, respectively. As our designs run on embedded Linux, the ARM processor needs at
+
+system initialization to generate a virtual address (ECC_vr_adr) for the ECC accelerator and map it
+
+Electronics 2019, 8, 1238
+
+13 of 18
+
+allow to reset the ECC accelerator, send the inputs of Algorithm 3, and retrieve the resulting point coordinates, respectively. As our designs run on embedded Linux, the ARM processor needs at system initialization to generate a virtual address (ECC_vr_adr) for the ECC accelerator and map it to its physical address (ECC_BASE_ADDR). This step is ensured by the VR_adr_hw() function, where the following instructions are executed:
+1. int fd = open(“/dev/mem”,O_RDWR); 2. int pg_size = sysconf(_SC_PAGESIZE); 3. int pg_adr_ECC = ECC_BASE_ADDR & (pg_size-1); 4. int pg_oﬀset_ECC = ECC_BASE_ADDR - pg_adr_ECC; 5. ECC_vr_adr = mmap(NULL, pg_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd,
+(ECC_BASE_ADDR & (pg_size-1)));
+Once the virtual address is generated, the addresses of the four registers used for data/instruction exchanging can be calculated as follows:
+• InsIn_adr = *((unsigned *)(ECC_vr_adr+pg_oﬀset_ECC)) • DataIn_adr = *((unsigned *)(ECC_vr_adr+pg_oﬀset_ECC+4)) • InsOut_adr = *((unsigned *)(ECC_vr_adr+pg_oﬀset_ECC+8)) • DataOut_adr = *((unsigned *)(ECC_vr_adr+pg_oﬀset_ECC+12))
+Table 4 presents the execution time of the developed crypto functions for the TLS1.2 protocol, as well as the time of all of the TLS1.2 process. The reported performances include the following execution times:
+• Random generation. • SHA256 and HMAC functions. • Data representation from large numbers to radix-r for AES and ECC computations. • Client/Server data exchanging via sockets.
+
+Table 4. Execution time of the involved crypto functions for TLS execution.
+
+Protocol AES
+ECC TLS
+
+Bit-Length 128 bits
+233 bits 384 bits
+
+Function
+AES_encryption() AES_decryption()
+ECSM() ECDHE() ECDSA_gen() ECDSA_check()
+TLS1.2()
+
+Execution Time
+56 µs 101 µs
+413 µs 1.7 ms 3.5 ms 4.1 ms
+67.5 ms
+
+The proposed design performs a single 233-bit ECSM using the ECC accelerator in 400 µs. Moreover, the IoTS and IoTC perform the ECDHE procedure in 1.7 ms. This time depends on the size of n1 and n2, which are required in the ECDHE procedure. In our case, the size of both n1 and n2 is 233 bits. For the ECDSA protocol, the IoTS generates the signature in 3.5 ms, while the IoTC checks the received signature in 4.1 ms. These two times are linked to the bit-size of the k generated in line 1 of Algorithm 1 and the intermediate results (u1, u2) of Algorithm 2. Finally, the generation of the 384-bit secret key between the IoTS and the IoTC based on the TLS1.2 protocol is achieved in 67.5 ms. Figure 8 shows a screenshot of one measurement of TLS1.2() execution in the server side (Figure 8a), and the client side (Figure 8b).
+
+Electronics 2019, 8, x FOR PEER REVIEW
+Electronics 2019, 8, 1238 Electronics 2019, 8, x FOR PEER REVIEW
+
+14 of 18
+14 of 18 14 of 18
+
+(a)
+(a)
+(bb))
+FiguFreig8u.reSc8r.eSecnresehnosthootf oTfLTSL1S.12.(2)()exexeeccuuttiioonn timmeeiinntthhee(a()a)sesrevrevresridseid, aen, danthdet(hbe) c(blie)nctliseidnet.side.
+44..33.. CC4oo.3mm. ppCaaorrmiisspooannriswwoniitthhwSiSthoommSoeemRReeeRcceeenncettnWWt Woorrokkrssks IInn oorrIddneeorrrdttooercctooommcoppmaarrpeearooeuuorrupprrrpoorppooopssoaaslal lwwwiitiththhooottthhheerr wwwooorrrkkksss, ,,aanannadaaddhohhcooeccxepexxeprpiemerreiimmnteaelnnsttaeatllusspeetthuuappvehhbaaevveeen bbeeeenn
+WpohpWohparparieeinneFeFpprdrdIIaaa.apW oh.sstrtBrpharBhiieeeionooeaaFoddprdnntkkItaa,h,.hssisitrBnhnw,i,webobaogwwgdonhkhot..,hashhiiaiFnF,wccriirbwhgiidlhldghgoee.shsaiuucFco’co’iroirorhldndngdeeennseueeceos’99svrovtntiidehnsihsssiecetcthh9seeevssteioohsssiMMscothwowesieifofniiMnsssnowntctcifwaiaiiwlnslznzuutcppaaaoiwodlzddudiipaecocMedMdittbbcteuuMthitoobihnurrtnaeoaiheeerinirarezezMoidModrzeeModffssedPdfPstdtPaa_hth_abhc_bcEibEcitEiotssotsCossCsCaaeeaeaCaraCrCxrxxdsssddp_pp__ssssssBBeeBeeeerr--rhh-rhrir22ii2vmovomvm3o33esse3ese3rt3eet_rrtin_i_nnainRntaRnaRngattNngnagadNlNZdlOdlsZtOZesOyshKttteyenyehuKhKOttnqnpueeouOOAqq.tppdoohA1A.et.dted1hhv1r1eCeiee11ovcvrrCaeCniicscooeccaeanenaaesccsenelccectdaeaarsaenalnclcaceetdttdsoorsrsmraaacaacttfocmsosooolmrrimraauecffnnmccmorotilylrciriufupeaeoccnnttnnrreorittyiydtgcchfpfparaooeuattttrrpeoseoTidhtgdtgLnhhirrgScueeauapspsTTiihhnLLniigSgScc
+
+Figure 9. Experimental setup for TLS handshaking.
+Table 5 shows the performance comparison of our design and some FPGA-based TLS/SSL implementations. The coFFmiiggpuuarreeis9o9..nEEsxxappreerrmiimmaeednnettaainll ssteettruumppsffoofrr oTTcLLcSSuhphaiaenndddsshlhiacaekkiiLnnUgg..Ts, selected RAM blocks and execution time for single TLS/SSL handshake negotiations.
+Taabbllee 55 sshhoowwss tthhee ppeerrffoorrmmaannce ccoommparison of our ddesign and ssome FFPGA-based TLS/SSL implementations. TThhee commppaarriissoonnss aarree maddee in terms of occupied slice LUTs, selected RAM blocks and execution time for single TLS//SSSSLL hhaannddsshhaakkee nneeggoottiiaattiioonnss..
+
+Electronics 2019, 8, 1238
+
+15 of 18
+
+Table 5. TLSv1.2 implementation performance comparisons to recent works.
+
+Device
+
+Design
+
+Approach Freq MHz # LUTs RAMs
+
+Zynq-7Z007S This work
+
+SW/HW
+
+666/100
+
+8503
+
+9
+
+Spartan-3
+
+Wang [16]
+
+HW
+
+150
+
+90644
+
+216
+
+Virtex 5
+
+Hamilton [12]
+
+HW
+
+75
+
+39052
+
+75
+
+Zynq- 7z020
+
+Paul [14]
+
+SW/HW
+
+- /125
+
+27559
+
+-
+
+Huawei-Taushia Xiao [17]
+
+SW/HW
+
+2100/-
+
+-
+
+-
+
+Virtex 7
+
+Paul [21]
+
+HW
+
+-
+
+52005
+
+225
+
+(*) the authors report the performance only in terms of throughput.
+
+Execution Time
+67.5 ms 0.62 ms 11.3 ms
+59241 kB/s (*)
+220 ms
+
+The authors of [16] presented a Network Security Processor (NSP) implementation on a Spartan-3 FPGA device of the IPSec/SSL protocols. The results show that their processor provides high timing performance by achieving 1600 full SSL handshakes per second with a 150 MHz clock. However, it requires 10 times more slice LUTs and 24 times more RAMs than our design.
+In [12], a FPGA-based NSP of the TLSv1.2 protocol on a Virtex-5 device was proposed. The NSP was implemented with a secure true random number generator and ECC coprocessor. Compared to our design, the proposed processor is 6 times faster. However, it requires 5 times more slice LUTs and 9 times more RAMs.
+In [14] a pipelined architecture of an NSP for the SSL/TLS protocols is implemented on a Zynq-7z020-clg484 device. The proposed NSP presents high area requirements with 3 times more slice LUTs than our design. The authors did not present the timing performance of the TLS/SSL handshake.
+We note that these implementations [12,14,16] present high-speed processors but with high-area requirements. Hence, these designs are not recommended for low-area FPGA devices, as opposed to the contrary of our design, which can be eﬃciently used on such devices.
+In [17], a SW/HW implementation of an Energy-Eﬃcient Crypto Accelerator (EECA) for an HTTPS server on a 8-Core HUAWEI Taishan server and an ARM Cortex-A57 CPU was proposed. The evaluation of the whole Web server was reported in terms of throughput and energy consumption for diﬀerent data sizes, ranging from 1 KB to 2 MB. The obtained throughputs vary from 59241 KB/s to 1001 KB/s with a 2.1 GHz clock. The high-performance of this HTTPS server is obtained by using very expensive hardware platforms, as once more opposed to our implementation targeting low-cost FPGA devices.
+The authors of [21] presented the implementation of the TLSv1.3 protocol for end-to-end secure connection between an Intel i5 client trusted workplace and a Virtex-7 FPGA cloud node (SecFPGA). The proposed design takes about 220 ms to perform the TLSv1.3 handshake and to deploy a 4 MB ﬁle. It requires 52005 LUTs and 225 RAMs. Thus, our design shows better time execution while requiring less area.
+5. Conclusions
+In this paper, FPGA-based Client/Server designs, implemented on a Zynq FPGA device, of the TLSv1.2 protocol for IoT applications are presented. Our main aim is to achieve the best trade-oﬀ between ﬂexibility, scalability, timing execution, and area consumption, with special attention to area requirements for enabling low-cost IoT implementations while maintaining good performance ﬁgures. To improve the execution time, a SW/HW co-design implementation approach is proposed. Thus, the critical point operation ECSM of ECC protocols is implemented in HW around an ARM Cortex A9 microprocessor, while, the control of the whole TLSv1.2 handshake negotiations is ensured by the processor, which runs on embedded Linux OS for Zynq. The proposed 32-bit I/O ECC accelerator requires only 3395 slice LUTs, thus allowing not only ﬂexible integration around various 32-bit microprocessors but also an easier implementation on low-cost FPGA devices. The proposed architecture occupies 8503 LUTs and performs full handshake negotiations between IoTS and IoTC designs in 67.5 ms. From the performance comparisons of our results and other works in the literature,
+
+Electronics 2019, 8, 1238
+
+16 of 18
+
+it can be concluded that our design achieves the best trade-oﬀ between security, area and speed for the target application. It requires less area while providing reduced timing execution. Therefore, the proposed implementation approach is suitable for small IoT embedded Client/Server secure coordinators implemented on low-cost devices.
+Author Contributions: Conceptualization, L.P.; Methodology, J.A.Á-B., E.C. and L.P.; Software, A.M.B. and J.A.Á-B.; Validation, L.P. and A.G.; Formal Analysis, A.M.B. and L.P.; Resources, L.P.; Writing—Original Draft Preparation, A.M.B. and L.P.; Writing—Review & Editing, L.P. and A.G.; Supervision, L.P., N.B. and M.A.; Project Administration, L.P., N.B. and M.A.
+Funding: This work was partially supported by Ministry of Higher Education and Scientiﬁc Research of Algeria under scholarship program “Exceptional National Program (PNE) 2018-2019”.
+Conﬂicts of Interest: The authors declare no conﬂict of interest
+References
+1. Wang, S.; Hou, Y.; Gao, F.; Ji, X. A novel IoT access architecture for vehicle monitoring system. In Proceedings of the 2016 IEEE 3rd World Forum on Internet of Things (WF-IoT), Reston, VA, USA, 12–14 December 2016.
+2. Dierks, T.; Rescorla, E. The Transport Layer Security (TLS) Protocol Version 1.2, Internet Engineering Task Force, IETF, RFC 5246 (Proposed Standard), Updated by RFCs 5746, 5878, 6176T. 2008.
+3. NIST. Advanced Encryption Standard (AES) (FIPS–197); National Institute of Standards and Technology: Gaithersburg, MD, USA, 2001.
+4. NIST. Data Encryption Standard (DES) (FIPS–46-3); National Institute of Standards and Technology: Gaithersburg, MD, USA, 1999.
+5. NIST. Secure Hash Standard (SHS) (FIPS 180-4); National Institute of Standards and Technology: Gaithersburg, MD, USA, 2015.
+6. NIST. Secure Hash Standard (SHS) (FIPS 202); National Institute of Standards and Technology: Gaithersburg, MD, USA, 2015.
+7. Hankerson, D.; Menezes, A.J.; Vanstone, S. Guide to Elliptic Curve Cryptography; Springer: Berlin/Heidelberg, Germany, 2003; p. 332.
+8. Dofe, J.; Frey, J.; Yu, Q. Hardware security assurance in emerging IoT applications. In Proceedings of the 2016 IEEE International Symposium on Circuits and Systems (ISCAS), Montreal, QC, Canada, 22–25 May 2016.
+9. Tao, H.; Bhuiyan, M.Z.A.; Abdalla, A.N.; Hassan, M.M.; Zain, J.M.; Hayajneh, T. Secured Data Collection with Hardware-Based Ciphers for IoT-Based Healthcare. IEEE Internet Things J. 2019, 6, 410–420. [CrossRef]
+10. Al-Omary, A.; Alsabbagh, H.M.; Al-Rizzo, H. Survey of Hardware-based Security support for IoT/CPS Systems. KnE Eng. 2018, 3, 52–70. [CrossRef]
+11. Moeller, B.D.T.; Ko towicz, K. This POODLE Bites: Exploiting the SSL 3.0 Fallback. Security Advisory. 2014. Available online: https://www.openssl.org/~{}bodo/ssl-poodle.pdf (accessed on 28 October 2019).
+12. Hamilton, M.; Marnane, W.P. Implementation of a secure TLS coprocessor on an FPGA. Microprocess. Microsyst. 2016, 40, 167–180. [CrossRef]
+13. Khalil-Hani, M.; Nambiar, V.P.; Marsono, M.N. Hardware Acceleration of OpenSSL Cryptographic Functions for High-Performance Internet Security. In Proceedings of the 2010 International Conference on Intelligent Systems, Modelling and Simulation, Liverpool, UK, 27–29 January 2010.
+14. Paul, R.; Chakrabarti, A.; Ghosh, R. Multi core SSL/TLS security processor architecture and its FPGA prototype design with automated preferential algorithm. Microprocess. Microsyst. 2016, 40, 124–136. [CrossRef]
+15. Paul, R.; Shukla, S. Partitioned security processor architecture on FPGA platform. IET Comput. Digit. Tech. 2018, 12, 216–226. [CrossRef]
+16. Wang, H.; Bai, G.; Chen, H. A Gbps IPSec SSL Security Processor Design and Implementation in an FPGA Prototyping Platform. J. Signal Process Syst. 2010, 58, 311–324. [CrossRef]
+17. Xiao, C.; Zhang, L.; Liu, W.; Bergmann, N.; Xie, Y. Energy-eﬃcient crypto acceleration with HW/SW co-design for HTTPS. Future Gener. Comput. Syst. 2019, 96, 336–347. [CrossRef]
+18. Roy, D.B.; Agrawal, S.; Reberio, C.; Mukhopadhyay, D. Accelerating OpenSSL’s ECC with low cost reconﬁgurable hardware. In Proceedings of the 2016 International Symposium on Integrated Circuits (ISIC), Singapore, 12–14 December 2016.
+
+Electronics 2019, 8, 1238
+
+17 of 18
+
+19. Viega, J.; Chandra, P.; Messier, M. Network Security with Openssl; O’Reilly & Associates, Inc.: Sebastopol, CA, USA, 2002; p. 384.
+20. Wu, L.; Weaver, C.; Austin, T. CryptoManiac: A fast ﬂexible architecture for secure communication. In Proceedings of the 28th Annual International Symposium on Computer Architecture, Gothenburg, Sweden, 30 June–4 July 2001.
+21. Genssler, P.R.; Knodel, O.; Spallek, R.G. Securing Virtualized FPGAs for an Untrusted Cloud. In Proceedings of the ESCS’18, Las Vegas, NV, USA, 30 July–2 August 2018.
+22. Parrilla, L.; Álvarez-Bermejo, J.A.; Castillo, E.; López-Ramos, J.A.; Morales-Santos, D.P.; García, A. Elliptic Curve Cryptography hardware accelerator for high-performance secure servers. J. Supercomput. 2019, 75, 1107–1122. [CrossRef]
+23. Parrilla, L.; Castillo, E.; López-Ramos, J.A.; Álvarez-Bermejo, J.A.; García, A.; Morales, D.P. Uniﬁed Compact ECC-AES Co-Processor with Group-Key Support for IoT Devices in Wireless Sensor Networks. Sensors 2018, 18, 251. [CrossRef]
+24. Blake-Wilson, S.; Bolyard, N.; Gupta, V.; Hawk, C.; Moeller, B. Elliptic Curve Cryptography (ECC) Cipher Suites for Transport Layer Security (TLS); RFC 4492; Internet Engineering Task Force (IETF), 2006; Available online: https://tools.ietf.org/html/rfc4492 (accessed on 28 October 2019).
+25. Johnson, D.; Menezes, A.; Vanstone, S. The Elliptic Curve Digital Signature Algorithm (ECDSA). Int. J. Inf. Secur. 2001, 1, 36–63. [CrossRef]
+26. Bellare, M.; Canetti, R.; Krawczyk, H. Keying Hash Functions for Message Authentication; Advances in Cryptology — CRYPTO ’96. CRYPTO 1996. Lecture Notes in Computer Science; Springer: Berlin/Heidelberg, Germany, 1996; Volume 1109.
+27. Bellemou, A.; Benblidia, N.; Anane, M.; Issad, M. MicroBlaze-Based Multiprocessor embedded cryptosystem on FPGA for Elliptic Curve Scalar Multiplication over Fp. J. Circuits Syst. Comput. 2018, 28, 1950037. [CrossRef]
+28. Koblitz, N. Elliptic curve cryptosystems. Math. Comput. 1987, 48, 109–203. [CrossRef] 29. Cohen, H.; Frey, G.; Avanzi, R.; Doche, C.; Lange, T.; Nguyen, K.; Vercauteren, F. Handbook of Elliptic and
+Hyperelliptic Curve Cryptography, 2nd ed.; Chapman & Hall/CRC: Boca Raton, FL, USA, 2012; p. 1024. 30. Certicom Research. SEC 2: Recommended Elliptic Curve Domain Parametes, Version 2.0, Standards for Eﬃcient
+Cryptography; 2010. Available online: https://www.secg.org/sec1-v2.pdf (accessed on 28 October 2019). 31. Huang, L.; Adhikarla, S.; Boneh, D.; Jackson, C. An Experimental Study of TLS Forward Secrecy Deployments.
+IEEE Internet Comput. 2014, 18, 43–51. [CrossRef] 32. IEEE. IEEE Standard Speciﬁcations for Public-Key Cryptography; IEEE Std 1363-2000; IEEE: Piscataway, NJ, USA,
+2000; ISBN 978-0-7381-1957-1. 33. IEEE. IEEE Standard Speciﬁcations for Public-Key Cryptography—Amendment 1: Additional Techniques; IEEE Std
+1363a-2004; IEEE: Piscataway, NJ, USA, 2004; ISBN 978-0-7381-4004-9. 34. Rivain, M. Fast and Regular Algorithms for Scalar Multiplication over Elliptic Curves. IACR Cryptology ePrint
+Archive; Report 2011/388 2011. Available online: https://eprint.iacr.org/2011/388 (accessed on 28 October 2019). 35. Joye, M.; Yen, S.-M. The Montgomery Powering Ladder; Springer: Berlin/Heidelberg, Germany, 2003. 36. Baldwin, B.; Goundar, R.R.; Hamilton, M.; Marnane, W.P. Co-Z ECC scalar multiplications for hardware,
+software and hardware–software co-design on embedded systems. J. Cryptogr. Eng. 2012, 2, 221–240. [CrossRef] 37. Karatsuba, A. Math The complexity of computations. Proc. Steklov Inst. Math. 1995, 211, 169–183. 38. Fan, H.; Sun, J.; Gu, M.; Lam, K.-Y. Overlap-free Karatsuba-Ofman polynomial multiplication algorithms. IET Inf. Secur. 2010, 4, 8–14. [CrossRef] 39. Avnet. Minized Board Datasheet. Available online: http://zedboard.org/sites/default/ﬁles/documentations/ MiniZed-GSG-v1_2.pdf (accessed on 28 October 2019). 40. Ansari, B.; Hasan, M.A. High-Performance Architecture of Elliptic Curve Scalar Multiplication. IEEE Trans. Comput. 2008, 57, 1443–1453. [CrossRef] 41. Khan, Z.; Benaissa, M. Throughput/Area-eﬃcient ECC Processor Using Montgomery Point Multiplication on FPGA. IEEE Trans. Circuits Syst. II Express Briefs 2015, 62, 1078–1082. [CrossRef] 42. Sutter, G.; Deschamps, J.; Imaña, J. Eﬃcient Elliptic Curve Point Multiplication using Digit Serial Binary Field Operations. IEEE Trans. Ind. Electron. 2013, 60, 217–225. [CrossRef]
+
+Electronics 2019, 8, 1238
+
+18 of 18
+
+43. Issad, M.; Boudraa, B.; Anane, M.; Bellemou, A.M. Eﬃcient PSoC Implementation of Modular Multiplication and Exponentiation Based on Serial-Parallel Combination. J. Circuits Syst. Comput. 2019. [CrossRef]
+44. Issad, M.; Boudraa, B.; Anane, M.; Anane, N. Software/Hardware Co-Design of Modular Exponentiation for Eﬃcient Rsa Cryptosystem. J. Circuits Syst. Comput. 2014, 23, 1450032. [CrossRef]
+© 2019 by the authors. Licensee MDPI, Basel, Switzerland. This article is an open access article distributed under the terms and conditions of the Creative Commons Attribution (CC BY) license (http://creativecommons.org/licenses/by/4.0/).
+

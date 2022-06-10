@@ -1,0 +1,16 @@
+Title:          Efficient Implementation on Low-Cost SoC-FPGAs of TLSv1.2 Protocol with ECC_AES Support for Secure IoT Coordinators
+Subject:        Security management for IoT applications is a critical research field, especially when taking into account the performance variation over the very different IoT devices. In this paper, we present high-performance client/server coordinators on low-cost SoC-FPGA devices for secure IoT data collection. Security is ensured by using the Transport Layer Security (TLS) protocol based on the TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 cipher suite. The hardware architecture of the proposed coordinators is based on SW/HW co-design, implementing within the hardware accelerator core Elliptic Curve Scalar Multiplication (ECSM), which is the core operation of Elliptic Curve Cryptosystems (ECC). Meanwhile, the control of the overall TLS scheme is performed in software by an ARM Cortex-A9 microprocessor. In fact, the implementation of the ECC accelerator core around an ARM microprocessor allows not only the improvement of ECSM execution but also the performance enhancement of the overall cryptosystem. The integration of the ARM processor enables to exploit the possibility of embedded Linux features for high system flexibility. As a result, the proposed ECC accelerator requires limited area, with only 3395 LUTs on the Zynq device used to perform high-speed, 233-bit ECSMs in 413 s, with a 50 MHz clock. Moreover, the generation of a 384-bit TLS handshake secret key between client and server coordinators requires 67.5 ms on a low cost Zynq 7Z007S device.
+Keywords:       TLS; ECC; AES; FPGA; Embedded Linux
+Author:         Ahmed Mohamed Bellemou, Antonio García, Encarnación Castillo, Nadjia Benblidia, Mohamed Anane, José Antonio Álvarez-Bermejo and Luis Parrilla
+Creator:        LaTeX with hyperref package
+Producer:       pdfTeX-1.40.18
+CreationDate:   10/30/19 16:17:19
+ModDate:        10/30/19 16:17:19
+Tagged:         no
+Form:           none
+Pages:          18
+Encrypted:      no
+Page size:      595.276 x 841.89 pts (A4) (rotated 0 degrees)
+File size:      2521374 bytes
+Optimized:      no
+PDF version:    1.5
